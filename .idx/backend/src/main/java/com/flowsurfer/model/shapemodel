@@ -1,0 +1,218 @@
+package com.flowsurfer.model;
+
+import java.util.UUID;
+
+public class DiagramShape {
+    private String id;
+    private ShapeType type;
+    private double x1, y1, x2, y2;
+    private String text;
+    private String fillColor;
+    private String strokeColor;
+    private String sourceShapeId;
+    private String targetShapeId;
+    private boolean isSelfLoop;
+    private ConnectionPoint selfLoopStartPoint;
+    private ConnectionPoint selfLoopEndPoint;
+
+    public enum ShapeType {
+        PROCESS, DECISION, DATA, LINE, TEXT
+    }
+
+    public enum ConnectionPoint {
+        TOP, RIGHT, BOTTOM, LEFT
+    }
+
+    // Default constructor for JSON deserialization
+    public DiagramShape() {
+        this.id = UUID.randomUUID().toString();
+        this.fillColor = "#FFFFFF";
+        this.strokeColor = "#000000";
+    }
+
+    public DiagramShape(ShapeType type, double x1, double y1, double x2, double y2) {
+        this();
+        this.type = type;
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+    }
+
+    // Getters and setters
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public ShapeType getType() {
+        return type;
+    }
+
+    public void setType(ShapeType type) {
+        this.type = type;
+    }
+
+    public double getX1() {
+        return x1;
+    }
+
+    public void setX1(double x1) {
+        this.x1 = x1;
+    }
+
+    public double getY1() {
+        return y1;
+    }
+
+    public void setY1(double y1) {
+        this.y1 = y1;
+    }
+
+    public double getX2() {
+        return x2;
+    }
+
+    public void setX2(double x2) {
+        this.x2 = x2;
+    }
+
+    public double getY2() {
+        return y2;
+    }
+
+    public void setY2(double y2) {
+        this.y2 = y2;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public String getFillColor() {
+        return fillColor;
+    }
+
+    public void setFillColor(String fillColor) {
+        this.fillColor = fillColor;
+    }
+
+    public String getStrokeColor() {
+        return strokeColor;
+    }
+
+    public void setStrokeColor(String strokeColor) {
+        this.strokeColor = strokeColor;
+    }
+
+    public String getSourceShapeId() {
+        return sourceShapeId;
+    }
+
+    public void setSourceShapeId(String sourceShapeId) {
+        this.sourceShapeId = sourceShapeId;
+    }
+
+    public String getTargetShapeId() {
+        return targetShapeId;
+    }
+
+    public void setTargetShapeId(String targetShapeId) {
+        this.targetShapeId = targetShapeId;
+    }
+
+    public boolean isSelfLoop() {
+        return isSelfLoop;
+    }
+
+    public void setSelfLoop(boolean selfLoop) {
+        isSelfLoop = selfLoop;
+    }
+
+    public ConnectionPoint getSelfLoopStartPoint() {
+        return selfLoopStartPoint;
+    }
+
+    public void setSelfLoopStartPoint(ConnectionPoint selfLoopStartPoint) {
+        this.selfLoopStartPoint = selfLoopStartPoint;
+    }
+
+    public ConnectionPoint getSelfLoopEndPoint() {
+        return selfLoopEndPoint;
+    }
+
+    public void setSelfLoopEndPoint(ConnectionPoint selfLoopEndPoint) {
+        this.selfLoopEndPoint = selfLoopEndPoint;
+    }
+
+    // Utility method to enforce aspect ratios like in the original app
+    public void enforceAspectRatio() {
+        double width = Math.abs(x2 - x1);
+        double height = Math.abs(y2 - y1);
+        
+        switch (type) {
+            case PROCESS:
+                // Process boxes should be wider than tall with a 2:1 max ratio
+                if (height > width) {
+                    // Make it wider
+                    if (x2 > x1) {
+                        x2 = x1 + height;
+                    } else {
+                        x1 = x2 + height;
+                    }
+                } else if (width > height * 2) {
+                    // Limit width to 2x height
+                    if (x2 > x1) {
+                        x2 = x1 + height * 2;
+                    } else {
+                        x1 = x2 + height * 2;
+                    }
+                }
+                break;
+                
+            case DECISION:
+                // Decision diamonds should maintain a 1:1 ratio
+                if (width != height) {
+                    double size = Math.max(width, height);
+                    if (x2 > x1) {
+                        x2 = x1 + size;
+                    } else {
+                        x1 = x2 + size;
+                    }
+                    
+                    if (y2 > y1) {
+                        y2 = y1 + size;
+                    } else {
+                        y1 = y2 + size;
+                    }
+                }
+                break;
+                
+            case DATA:
+                // Data parallelograms should be wider than tall with a 3:1 max ratio
+                if (height > width) {
+                    // Make it wider
+                    if (x2 > x1) {
+                        x2 = x1 + height * 1.5;
+                    } else {
+                        x1 = x2 + height * 1.5;
+                    }
+                } else if (width > height * 3) {
+                    // Limit width to 3x height
+                    if (x2 > x1) {
+                        x2 = x1 + height * 3;
+                    } else {
+                        x1 = x2 + height * 3;
+                    }
+                }
+                break;
+        }
+    }
+}

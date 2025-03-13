@@ -1,0 +1,83 @@
+package com.flowsurfer.model;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+public class Diagram {
+    private String id;
+    private String name;
+    private Date createdDate;
+    private Date modifiedDate;
+    private List<DiagramShape> shapes;
+
+    public Diagram() {
+        this.id = UUID.randomUUID().toString();
+        this.createdDate = new Date();
+        this.modifiedDate = new Date();
+        this.shapes = new ArrayList<>();
+    }
+
+    public Diagram(String name) {
+        this();
+        this.name = name;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Date getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Date createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Date getModifiedDate() {
+        return modifiedDate;
+    }
+
+    public void setModifiedDate(Date modifiedDate) {
+        this.modifiedDate = modifiedDate;
+    }
+
+    public List<DiagramShape> getShapes() {
+        return shapes;
+    }
+
+    public void setShapes(List<DiagramShape> shapes) {
+        this.shapes = shapes;
+    }
+
+    public void addShape(DiagramShape shape) {
+        this.shapes.add(shape);
+        this.modifiedDate = new Date();
+    }
+
+    public void removeShape(String shapeId) {
+        this.shapes.removeIf(shape -> shape.getId().equals(shapeId));
+        this.modifiedDate = new Date();
+    }
+
+    public DiagramShape getShapeById(String shapeId) {
+        return this.shapes.stream()
+                .filter(shape -> shape.getId().equals(shapeId))
+                .findFirst()
+                .orElse(null);
+    }
+}

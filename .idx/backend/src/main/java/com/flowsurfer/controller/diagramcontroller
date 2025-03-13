@@ -1,0 +1,110 @@
+package com.flowsurfer.controller;
+
+import com.flowsurfer.model.Diagram;
+import com.flowsurfer.model.DiagramShape;
+import com.flowsurfer.service.DiagramService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/diagrams")
+@CrossOrigin(origins = "*") // For development - restrict in production
+public class DiagramController {
+
+    private final DiagramService diagramService;
+
+    @Autowired
+    public DiagramController(DiagramService diagramService) {
+        this.diagramService = diagramService;
+    }
+
+    @GetMapping
+    public List<Diagram> getAllDiagrams() {
+        return diagramService.getAllDiagrams();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Diagram> getDiagramById(@PathVariable String id) {
+        Diagram diagram = diagramService.getDiagramById(id);
+        if (diagram != null) {
+            return ResponseEntity.ok(diagram);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping
+    public Diagram createDiagram(@RequestBody Diagram diagram) {
+        return diagramService.saveDiagram(diagram);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Diagram> updateDiagram(
+            @PathVariable String id,
+            @RequestBody Diagram diagram) {
+        
+        if (!id.equals(diagram.getId())) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Diagram updatedDiagram = diagramService.saveDiagram(diagram);
+        return ResponseEntity.ok(updatedDiagram);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDiagram(@PathVariable String id) {
+        boolean deleted = diagramService.deleteDiagram(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/{diagramId}/shapes")
+    public ResponseEntity<DiagramShape> addShape(
+            @PathVariable String diagramId,
+            @RequestBody DiagramShape shape) {
+        
+        DiagramShape addedShape = diagramService.addShape(diagramId, shape);
+        if (addedShape != null) {
+            return ResponseEntity.ok(addedShape);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{diagramId}/shapes/{shapeId}")
+    public ResponseEntity<DiagramShape> updateShape(
+            @PathVariable String diagramId,
+            @PathVariable String shapeId,
+            @RequestBody DiagramShape shape) {
+        
+        if (!shapeId.equals(shape.getId())) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        DiagramShape updatedShape = diagramService.updateShape(diagramId, shape);
+        if (updatedShape != null) {
+            return ResponseEntity.ok(updatedShape);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{diagramId}/shapes/{shapeId}")
+    public ResponseEntity<Void> deleteShape(
+            @PathVariable String diagramId,
+            @PathVariable String shapeId) {
+        
+        boolean deleted = diagramService.deleteShape(diagramId, shapeId);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+}

@@ -1,0 +1,139 @@
+import React from 'react';
+import { ShapeType } from '../utils/shapeUtils';
+
+const Toolbar = ({ 
+  currentShape, 
+  setCurrentShape, 
+  selectedShape, 
+  onFillColorChange, 
+  onStrokeColorChange,
+  onEditText 
+}) => {
+  return (
+    <div className="toolbar" style={{ 
+      padding: '10px', 
+      borderBottom: '1px solid #ddd', 
+      display: 'flex',
+      gap: '10px',
+      alignItems: 'center'
+    }}>
+      <div className="shape-tools">
+        <button 
+          className={`tool-btn ${currentShape === ShapeType.PROCESS ? 'active' : ''}`}
+          onClick={() => setCurrentShape(ShapeType.PROCESS)}
+          style={{ 
+            fontWeight: currentShape === ShapeType.PROCESS ? 'bold' : 'normal',
+            padding: '8px 12px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            background: currentShape === ShapeType.PROCESS ? '#e0e0e0' : '#f0f0f0'
+          }}
+        >
+          Process
+        </button>
+        
+        <button 
+          className={`tool-btn ${currentShape === ShapeType.DECISION ? 'active' : ''}`}
+          onClick={() => setCurrentShape(ShapeType.DECISION)}
+          style={{ 
+            fontWeight: currentShape === ShapeType.DECISION ? 'bold' : 'normal',
+            padding: '8px 12px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            background: currentShape === ShapeType.DECISION ? '#e0e0e0' : '#f0f0f0'
+          }}
+        >
+          Decision
+        </button>
+        
+        <button 
+          className={`tool-btn ${currentShape === ShapeType.DATA ? 'active' : ''}`}
+          onClick={() => setCurrentShape(ShapeType.DATA)}
+          style={{ 
+            fontWeight: currentShape === ShapeType.DATA ? 'bold' : 'normal',
+            padding: '8px 12px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            background: currentShape === ShapeType.DATA ? '#e0e0e0' : '#f0f0f0'
+          }}
+        >
+          Data
+        </button>
+        
+        <button 
+          className={`tool-btn ${currentShape === ShapeType.LINE ? 'active' : ''}`}
+          onClick={() => setCurrentShape(ShapeType.LINE)}
+          style={{ 
+            fontWeight: currentShape === ShapeType.LINE ? 'bold' : 'normal',
+            padding: '8px 12px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            background: currentShape === ShapeType.LINE ? '#e0e0e0' : '#f0f0f0'
+          }}
+        >
+          Connector
+        </button>
+        
+        <button 
+          className={`tool-btn ${currentShape === ShapeType.TEXT ? 'active' : ''}`}
+          onClick={() => setCurrentShape(ShapeType.TEXT)}
+          style={{ 
+            fontWeight: currentShape === ShapeType.TEXT ? 'bold' : 'normal',
+            padding: '8px 12px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            background: currentShape === ShapeType.TEXT ? '#e0e0e0' : '#f0f0f0'
+          }}
+        >
+          Text
+        </button>
+      </div>
+      
+      <div className="separator" style={{ borderLeft: '1px solid #ddd', height: '30px', margin: '0 15px' }}></div>
+      
+      <div className="color-tools" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <label>
+          Fill:
+          <input 
+            type="color" 
+            value={selectedShape?.fillColor || '#FFFFFF'}
+            onChange={(e) => onFillColorChange(e.target.value)}
+            disabled={!selectedShape || selectedShape.type === ShapeType.LINE}
+            style={{ marginLeft: '5px' }}
+          />
+        </label>
+        
+        <label>
+          Stroke:
+          <input 
+            type="color" 
+            value={selectedShape?.strokeColor || '#000000'}
+            onChange={(e) => onStrokeColorChange(e.target.value)}
+            disabled={!selectedShape}
+            style={{ marginLeft: '5px' }}
+          />
+        </label>
+      </div>
+      
+      <div className="separator" style={{ borderLeft: '1px solid #ddd', height: '30px', margin: '0 15px' }}></div>
+      
+      <div className="text-tools">
+        <button 
+          onClick={() => onEditText()}
+          disabled={!selectedShape || selectedShape.type === ShapeType.LINE}
+          style={{ 
+            padding: '8px 12px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            background: '#f0f0f0',
+            opacity: (!selectedShape || selectedShape.type === ShapeType.LINE) ? 0.5 : 1
+          }}
+        >
+          Edit Text
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Toolbar;

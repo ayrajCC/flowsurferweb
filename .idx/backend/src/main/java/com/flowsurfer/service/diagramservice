@@ -1,0 +1,92 @@
+package com.flowsurfer.service;
+
+import com.flowsurfer.model.Diagram;
+import com.flowsurfer.model.DiagramShape;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Service
+public class DiagramService {
+    // In-memory storage - could be replaced with a database in production
+    private final Map<String, Diagram> diagrams = new ConcurrentHashMap<>();
+
+    public List<Diagram> getAllDiagrams() {
+        return new ArrayList<>(diagrams.values());
+    }
+
+    public Diagram getDiagramById(String id) {
+        return diagrams.get(id);
+    }
+
+    public Diagram saveDiagram(Diagram diagram) {
+        if (diagram.getId() == null) {
+            diagram.setId(UUID.randomUUID().toString());
+            diagram.setCreatedDate(new Date());
+        }
+        
+        diagram.setModifiedDate(new Date());
+        diagrams.put(diagram.getId(), diagram);
+        return diagram;
+    }
+
+    public boolean deleteDiagram(String id) {
+        return diagrams.remove(id) != null;
+    }
+
+    public DiagramShape addShape(String diagramId, DiagramShape shape) {
+        Diagram diagram = diagrams.get(diagramId);
+        if (diagram == null) {
+            return null;
+        }
+
+        // Apply shape constraints and validation
+        shape.enforceAspectRatio();
+        
+        diagram.addShape(shape);
+        return shape;
+    }
+
+    public DiagramShape updateShape(String diagramId, DiagramShape shape) {
+        Diagram diagram = diagrams.get(diagramId);
+        if (diagram == null) {
+            return null;
+        }
+
+        // Find and update the shape
+        DiagramShape existingShape = diagram.getShapeById(shape.getId());
+        if (existingShape == null) {
+            return null;
+        }
+
+        // Apply shape constraints
+        shape.enforceAspectRatio();
+        
+        // Update by removing the old and adding the new
+        diagram.removeShape(shape.getId());
+        diagram.addShape(shape);
+        
+        return shape;
+    }
+
+    public boolean deleteShape(String diagramId, String shapeId) {
+        Diagram diagram = diagrams.get(diagramId);
+        if (diagram == null) {
+            return false;
+        }
+
+        // Remove shape
+        diagram.removeShape(shapeId);
+        
+        // Also remove any connectors that were connected to this shape
+        diagram.getShapes().stream()
+            .filter(shape -> shape.getType() == DiagramShape.ShapeType.LINE)
+            .filter(shape -> Objects.equals(shape.getSourceShapeId(), shapeId) || 
+                             Objects.equals(shape.getTargetShapeId(), shapeId))
+            .map(DiagramShape::getId)
+            .forEach(diagram::removeShape);
+        
+        return true;
+    }
+}

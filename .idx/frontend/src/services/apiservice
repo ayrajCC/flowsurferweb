@@ -1,0 +1,39 @@
+import axios from 'axios';
+
+const API_URL = '/api';
+
+export default {
+  // Diagrams
+  getAllDiagrams: () => {
+    return axios.get(`${API_URL}/diagrams`);
+  },
+  
+  getDiagramById: (id) => {
+    return axios.get(`${API_URL}/diagrams/${id}`);
+  },
+  
+  createDiagram: (diagram) => {
+    return axios.post(`${API_URL}/diagrams`, diagram);
+  },
+  
+  updateDiagram: (id, diagram) => {
+    return axios.put(`${API_URL}/diagrams/${id}`, diagram);
+  },
+  
+  deleteDiagram: (id) => {
+    return axios.delete(`${API_URL}/diagrams/${id}`);
+  },
+  
+  // Shapes
+  addShape: (diagramId, shape) => {
+    return axios.post(`${API_URL}/diagrams/${diagramId}/shapes`, shape);
+  },
+  
+  updateShape: (diagramId, shapeId, shape) => {
+    return axios.put(`${API_URL}/diagrams/${diagramId}/shapes/${shapeId}`, shape);
+  },
+  
+  deleteShape: (diagramId, shapeId) => {
+    return axios.delete(`${API_URL}/diagrams/${diagramId}/shapes/${shapeId}`);
+  }
+};

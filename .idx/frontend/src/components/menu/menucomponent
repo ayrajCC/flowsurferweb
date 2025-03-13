@@ -1,0 +1,419 @@
+import React, { useState } from 'react';
+import apiService from '../services/apiService';
+
+const Menu = ({ onNewDiagram, onOpenDiagram, onSaveDiagram }) => {
+  const [showFileMenu, setShowFileMenu] = useState(false);
+  const [showEditMenu, setShowEditMenu] = useState(false);
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
+  const [diagrams, setDiagrams] = useState([]);
+  const [showOpenDialog, setShowOpenDialog] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [diagramName, setDiagramName] = useState('');
+
+  const handleFileClick = () => {
+    setShowFileMenu(!showFileMenu);
+    setShowEditMenu(false);
+    setShowHelpMenu(false);
+  };
+
+  const handleEditClick = () => {
+    setShowEditMenu(!showEditMenu);
+    setShowFileMenu(false);
+    setShowHelpMenu(false);
+  };
+
+  const handleHelpClick = () => {
+    setShowHelpMenu(!showHelpMenu);
+    setShowFileMenu(false);
+    setShowEditMenu(false);
+  };
+
+  const handleNewClick = () => {
+    if (window.confirm('Create a new diagram? Any unsaved changes will be lost.')) {
+      onNewDiagram();
+    }
+    setShowFileMenu(false);
+  };
+
+  const handleOpenClick = async () => {
+    try {
+      const response = await apiService.getAllDiagrams();
+      setDiagrams(response.data);
+      setShowOpenDialog(true);
+      setShowFileMenu(false);
+    } catch (error) {
+      console.error('Error loading diagrams:', error);
+      alert('Error loading diagrams');
+    }
+  };
+
+  const handleSaveClick = () => {
+    setShowSaveDialog(true);
+    setShowFileMenu(false);
+  };
+
+  const handleOpenDiagram = async (id) => {
+    try {
+      const response = await apiService.getDiagramById(id);
+      onOpenDiagram(response.data);
+      setShowOpenDialog(false);
+    } catch (error) {
+      console.error('Error opening diagram:', error);
+      alert('Error opening diagram');
+    }
+  };
+
+  const handleSaveDiagram = async () => {
+    if (!diagramName.trim()) {
+      alert('Please enter a diagram name');
+      return;
+    }
+
+    try {
+      await onSaveDiagram(diagramName);
+      setShowSaveDialog(false);
+      setDiagramName('');
+    } catch (error) {
+      console.error('Error saving diagram:', error);
+      alert('Error saving diagram');
+    }
+  };
+
+  const handleAboutClick = () => {
+    alert('FlowSurfer Web v1.0\nA flowchart and diagram creation tool\n© 2025 Andrew H. Rogers');
+    setShowHelpMenu(false);
+  };
+
+  return (
+    <div className="menu" style={{ 
+      display: 'flex', 
+      background: '#f0f0f0', 
+      padding: '5px 10px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    }}>
+      <div style={{ position: 'relative' }}>
+        <button 
+          onClick={handleFileClick}
+          style={{ 
+            padding: '8px 12px',
+            border: 'none',
+            background: showFileMenu ? '#e0e0e0' : 'transparent',
+            borderRadius: '4px'
+          }}
+        >
+          File
+        </button>
+        {showFileMenu && (
+          <div style={{ 
+            position: 'absolute', 
+            top: '100%', 
+            left: 0, 
+            background: 'white',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            zIndex: 10,
+            minWidth: '150px'
+          }}>
+            <button
+              onClick={handleNewClick}
+              style={{ 
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 15px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            >
+              New
+            </button>
+            <button
+              onClick={handleOpenClick}
+              style={{ 
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 15px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            >
+              Open
+            </button>
+            <button
+              onClick={handleSaveClick}
+              style={{ 
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 15px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            >
+              Save
+            </button>
+            <hr style={{ margin: '5px 0', border: 'none', borderTop: '1px solid #eee' }} />
+            <button
+              onClick={() => {
+                setShowFileMenu(false);
+                if (window.confirm('Are you sure you want to exit? Any unsaved changes will be lost.')) {
+                  window.location.reload();
+                }
+              }}
+              style={{ 
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 15px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            >
+              Exit
+            </button>
+          </div>
+        )}
+      </div>
+      
+      <div style={{ position: 'relative' }}>
+        <button 
+          onClick={handleEditClick}
+          style={{ 
+            padding: '8px 12px',
+            border: 'none',
+            background: showEditMenu ? '#e0e0e0' : 'transparent',
+            borderRadius: '4px'
+          }}
+        >
+          Edit
+        </button>
+        {showEditMenu && (
+          <div style={{ 
+            position: 'absolute', 
+            top: '100%', 
+            left: 0, 
+            background: 'white',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            zIndex: 10,
+            minWidth: '150px'
+          }}>
+            <button
+              onClick={() => {
+                // Undo functionality would be implemented here
+                setShowEditMenu(false);
+              }}
+              style={{ 
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 15px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            >
+              Undo
+            </button>
+            <button
+              onClick={() => {
+                // Delete selected functionality would be implemented here
+                setShowEditMenu(false);
+              }}
+              style={{ 
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 15px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            >
+              Delete Selected
+            </button>
+          </div>
+        )}
+      </div>
+      
+      <div style={{ position: 'relative' }}>
+        <button 
+          onClick={handleHelpClick}
+          style={{ 
+            padding: '8px 12px',
+            border: 'none',
+            background: showHelpMenu ? '#e0e0e0' : 'transparent',
+            borderRadius: '4px'
+          }}
+        >
+          Help
+        </button>
+        {showHelpMenu && (
+          <div style={{ 
+            position: 'absolute', 
+            top: '100%', 
+            left: 0, 
+            background: 'white',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            zIndex: 10,
+            minWidth: '150px'
+          }}>
+            <button
+              onClick={handleAboutClick}
+              style={{ 
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 15px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer'
+              }}
+            >
+              About FlowSurfer
+            </button>
+          </div>
+        )}
+      </div>
+      
+      {/* Open Dialog */}
+      {showOpenDialog && (
+        <div className="dialog-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 100
+        }}>
+          <div className="dialog" style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '8px',
+            width: '400px',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <h2>Open Diagram</h2>
+            {diagrams.length === 0 ? (
+              <p>No saved diagrams found.</p>
+            ) : (
+              <ul style={{ listStyleType: 'none', padding: 0 }}>
+                {diagrams.map(diagram => (
+                  <li 
+                    key={diagram.id}
+                    onClick={() => handleOpenDiagram(diagram.id)}
+                    style={{
+                      padding: '10px',
+                      borderBottom: '1px solid #eee',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {diagram.name} ({new Date(diagram.modifiedDate).toLocaleString()})
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div style={{ marginTop: '20px', textAlign: 'right' }}>
+              <button
+                onClick={() => setShowOpenDialog(false)}
+                style={{ 
+                  padding: '8px 15px',
+                  border: '1px solid #ddd',
+                  background: '#f0f0f0',
+                  borderRadius: '4px',
+                  marginLeft: '10px'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Save Dialog */}
+      {showSaveDialog && (
+        <div className="dialog-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 100
+        }}>
+          <div className="dialog" style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '8px',
+            width: '400px'
+          }}>
+            <h2>Save Diagram</h2>
+            <div style={{ marginBottom: '15px' }}>
+              <label htmlFor="diagram-name">Diagram Name:</label>
+              <input
+                type="text"
+                id="diagram-name"
+                value={diagramName}
+                onChange={(e) => setDiagramName(e.target.value)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  marginTop: '5px'
+                }}
+              />
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                style={{ 
+                  padding: '8px 15px',
+                  border: '1px solid #ddd',
+                  background: '#f0f0f0',
+                  borderRadius: '4px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveDiagram}
+                style={{ 
+                  padding: '8px 15px',
+                  border: '1px solid #007bff',
+                  background: '#007bff',
+                  color: 'white',
+                  borderRadius: '4px',
+                  marginLeft: '10px'
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Menu;

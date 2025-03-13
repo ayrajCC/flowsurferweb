@@ -1,0 +1,375 @@
+import React, { useRef, useEffect, useState } from 'react';
+import { 
+  ShapeType, 
+  drawShape, 
+  findShapeAtPoint, 
+  createShape,
+  getConnectionCoordinates,
+  findClosestConnectionPoint
+} from '../utils/shapeUtils';
+
+const Canvas = ({ currentShapeType, onShapeSelect }) => {
+  const canvasRef = useRef(null);
+  const [shapes, setShapes] = useState([]);
+  const [drawing, setDrawing] = useState(false);
+  const [currentShape, setCurrentShape] = useState(null);
+  const [selectedShape, setSelectedShape] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [connectorSource, setConnectorSource] = useState(null);
+
+  // Draw all shapes
+  const drawCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw all shapes
+    shapes.forEach(shape => drawShape(ctx, shape));
+    
+    // Draw current shape being created
+    if (currentShape) {
+      drawShape(ctx, currentShape);
+    }
+    
+    // Highlight selected shape
+    if (selectedShape) {
+      highlightShape(ctx, selectedShape);
+    }
+  };
+
+  // Highlight a selected shape
+  const highlightShape = (ctx, shape) => {
+    ctx.strokeStyle = '#0000FF';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    
+    const minX = Math.min(shape.x1, shape.x2);
+    const maxX = Math.max(shape.x1, shape.x2);
+    const minY = Math.min(shape.y1, shape.y2);
+    const maxY = Math.max(shape.y1, shape.y2);
+    
+    ctx.strokeRect(minX - 5, minY - 5, maxX - minX + 10, maxY - minY + 10);
+    ctx.setLineDash([]);
+  };
+
+  // Update connected connectors when a shape moves
+  const updateConnectors = (movedShape) => {
+    const newShapes = shapes.map(shape => {
+      if (shape.type === ShapeType.LINE) {
+        // If this is a connector connected to the moved shape
+        if (shape.sourceShapeId === movedShape.id) {
+          // Update source connection point
+          const point = findClosestConnectionPoint(movedShape, shape.x1, shape.y1);
+          const [x, y] = getConnectionCoordinates(movedShape, point);
+          return { ...shape, x1: x, y1: y };
+        }
+        
+        if (shape.targetShapeId === movedShape.id) {
+          // Update target connection point
+          const point = findClosestConnectionPoint(movedShape, shape.x2, shape.y2);
+          const [x, y] = getConnectionCoordinates(movedShape, point);
+          return { ...shape, x2: x, y2: y };
+        }
+      }
+      return shape;
+    });
+    
+    setShapes(newShapes);
+  };
+
+  // Handle mouse down
+  const handleMouseDown = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Check if we're clicking on an existing shape
+    const clickedShape = findShapeAtPoint(shapes, x, y);
+    
+    if (clickedShape) {
+      // Select the shape
+      setSelectedShape(clickedShape);
+      if (onShapeSelect) onShapeSelect(clickedShape);
+      
+      // Set up dragging
+      setDragging(true);
+      setDragOffset({
+        x: x - clickedShape.x1,
+        y: y - clickedShape.y1
+      });
+      
+      // If we're in connector mode, set source shape
+      if (currentShapeType === ShapeType.LINE) {
+        setConnectorSource(clickedShape);
+        const point = findClosestConnectionPoint(clickedShape, x, y);
+        const [connX, connY] = getConnectionCoordinates(clickedShape, point);
+        
+        setCurrentShape({
+          type: ShapeType.LINE,
+          x1: connX,
+          y1: connY,
+          x2: x,
+          y2: y,
+          sourceShapeId: clickedShape.id,
+          strokeColor: '#000000'
+        });
+        
+        setDrawing(true);
+      }
+    } else {
+      // Start drawing a new shape (not a connector)
+      if (currentShapeType !== ShapeType.LINE) {
+        setSelectedShape(null);
+        if (onShapeSelect) onShapeSelect(null);
+        
+        setDrawing(true);
+        setCurrentShape(createShape(currentShapeType, x, y, x, y));
+      }
+    }
+  };
+
+  // Handle mouse move
+  const handleMouseMove = (e) => {
+    if (!drawing && !dragging) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (drawing) {
+      // Update the shape being drawn
+      if (currentShapeType === ShapeType.LINE && connectorSource) {
+        // For connectors, check if we're over a potential target
+        const potentialTarget = findShapeAtPoint(
+          shapes.filter(s => s.id !== connectorSource.id), 
+          x, y
+        );
+        
+        if (potentialTarget) {
+          // Snap to closest connection point on the target
+          const point = findClosestConnectionPoint(potentialTarget, x, y);
+          const [connX, connY] = getConnectionCoordinates(potentialTarget, point);
+          
+          setCurrentShape(prev => ({
+            ...prev,
+            x2: connX,
+            y2: connY,
+            targetShapeId: potentialTarget.id
+          }));
+        } else {
+          // Regular free-form drawing
+          setCurrentShape(prev => ({
+            ...prev,
+            x2: x,
+            y2: y,
+            targetShapeId: null
+          }));
+        }
+      } else {
+        // Regular shapes
+        setCurrentShape(prev => {
+          const updated = {
+            ...prev,
+            x2: x,
+            y2: y
+          };
+          return updated;
+        });
+      }
+    } else if (dragging && selectedShape) {
+      // Move the selected shape
+      const deltaX = x - dragOffset.x - selectedShape.x1;
+      const deltaY = y - dragOffset.y - selectedShape.y1;
+      
+      const updatedShape = {
+        ...selectedShape,
+        x1: selectedShape.x1 + deltaX,
+        y1: selectedShape.y1 + deltaY,
+        x2: selectedShape.x2 + deltaX,
+        y2: selectedShape.y2 + deltaY
+      };
+      
+      // Update the shape in the shapes array
+      setShapes(shapes.map(shape => 
+        shape.id === selectedShape.id ? updatedShape : shape
+      ));
+      
+      // Update the selected shape reference
+      setSelectedShape(updatedShape);
+      
+      // Update connected connectors
+      updateConnectors(updatedShape);
+      
+      // Update drag offset
+      setDragOffset({
+        x: x - updatedShape.x1,
+        y: y - updatedShape.y1
+      });
+    }
+    
+    // Redraw canvas
+    drawCanvas();
+  };
+
+  // Handle mouse up
+  const handleMouseUp = (e) => {
+    if (drawing) {
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      if (currentShapeType === ShapeType.LINE) {
+        // Finalize connector
+        const targetShape = findShapeAtPoint(
+          shapes.filter(s => s.id !== (connectorSource?.id || '')), 
+          x, y
+        );
+        
+        if (targetShape) {
+          // Set connector target
+          const finalShape = {
+            ...currentShape,
+            targetShapeId: targetShape.id
+          };
+          
+          // Add the connector to shapes list
+          setShapes([...shapes, finalShape]);
+        }
+        
+        // Reset connector state
+        setConnectorSource(null);
+      } else {
+        // Finalize other shapes
+        const finalShape = {
+          ...currentShape,
+          x2: x,
+          y2: y
+        };
+        
+        // Only add if it has a minimum size
+        if (Math.abs(finalShape.x2 - finalShape.x1) > 30 || 
+            Math.abs(finalShape.y2 - finalShape.y1) > 30 ||
+            currentShapeType === ShapeType.TEXT) {
+          
+          // For text shapes, prompt for text
+          if (currentShapeType === ShapeType.TEXT) {
+            const text = window.prompt('Enter text:', '');
+            if (text) {
+              finalShape.text = text;
+              setShapes([...shapes, finalShape]);
+            }
+          } else {
+            // For other shapes, add then prompt for text
+            setShapes([...shapes, finalShape]);
+            const text = window.prompt('Enter text for the shape:', '');
+            if (text) {
+              finalShape.text = text;
+              // Update the added shape
+              setShapes(shapes => shapes.map(s => 
+                s.id === finalShape.id ? {...s, text} : s
+              ));
+            }
+          }
+        }
+      }
+      
+      setDrawing(false);
+      setCurrentShape(null);
+    }
+    
+    setDragging(false);
+    
+    // Redraw canvas
+    drawCanvas();
+  };
+
+  // Double click to edit text
+  const handleDoubleClick = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const clickedShape = findShapeAtPoint(shapes, x, y);
+    if (clickedShape && clickedShape.type !== ShapeType.LINE) {
+      const text = window.prompt('Edit text:', clickedShape.text || '');
+      if (text !== null) {  // Check for cancel
+        const updatedShapes = shapes.map(shape => 
+          shape.id === clickedShape.id ? {...shape, text} : shape
+        );
+        setShapes(updatedShapes);
+        
+        // Update selected shape if it's the one being edited
+        if (selectedShape && selectedShape.id === clickedShape.id) {
+          setSelectedShape({...selectedShape, text});
+        }
+        
+        drawCanvas();
+      }
+    }
+  };
+
+  // Delete selected shape
+  const deleteSelected = () => {
+    if (!selectedShape) return;
+    
+    // Remove shape and any connected connectors
+    const newShapes = shapes.filter(shape => {
+      if (shape.id === selectedShape.id) return false;
+      if (shape.type === ShapeType.LINE && 
+         (shape.sourceShapeId === selectedShape.id || 
+          shape.targetShapeId === selectedShape.id)) {
+        return false;
+      }
+      return true;
+    });
+    
+    setShapes(newShapes);
+    setSelectedShape(null);
+    if (onShapeSelect) onShapeSelect(null);
+    drawCanvas();
+  };
+
+  // Handle keyboard events
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        deleteSelected();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedShape, shapes]);
+
+  // Draw canvas when component mounts or shapes change
+  useEffect(() => {
+    drawCanvas();
+  }, [shapes, selectedShape]);
+
+  return (
+    <div className="canvas-container" style={{ position: 'relative' }}>
+      <canvas
+        ref={canvasRef}
+        width={1024}
+        height={768}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
+        style={{ border: '1px solid #ddd', cursor: dragging ? 'move' : 'default' }}
+      />
+    </div>
+  );
+};
+
+export default Canvas;
